@@ -1,7 +1,9 @@
 ﻿using System.Collections.Generic;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using Microsoft.Xna.Framework.Media;
 
 namespace SpaceInvaders;
 
@@ -23,6 +25,9 @@ public class Game1 : Game
     
     private Texture2D bulletTexture;
     private Texture2D meteoriteTexture;
+    private Song bgMusic;
+    private SoundEffect fireBulletSound;
+    private SoundEffect destroyMeteoriteSound;
 
     public Game1()
     {
@@ -53,6 +58,12 @@ public class Game1 : Game
 
         // TODO: use this.Content to load your game content here
 
+        fireBulletSound = Content.Load<SoundEffect>("Space Invaders_laser");
+        destroyMeteoriteSound = Content.Load<SoundEffect>("Space Invaders_explosion");
+        bgMusic = Content.Load<Song>("Cinematic-electronic-track");
+        MediaPlayer.Play(bgMusic);
+        MediaPlayer.IsRepeating = true;
+        
         Texture2D playerTexture = Content.Load<Texture2D>("player_v2");
         meteoriteTexture = Content.Load<Texture2D>("invader_v1");
         bulletTexture = Content.Load<Texture2D>("bullet");
@@ -76,6 +87,7 @@ public class Game1 : Game
         // fire bullet
         if (bulletAliveTime <= 0 && Keyboard.GetState().IsKeyDown(Keys.Space))
         {
+            fireBulletSound.Play();
             bulletAliveTime = 2f;
             int bulletX = player.destinationRectangle.X + player.destinationRectangle.Width / 2;
             bullets.Add(bullet = new Bullet(bulletTexture,
@@ -87,7 +99,7 @@ public class Game1 : Game
         {
             if (bullet.IsAlive)
             {
-                bullet.Update(gameTime, meteorites);   
+                bullet.Update(gameTime, meteorites, destroyMeteoriteSound);   
             }
         }
         
@@ -105,7 +117,7 @@ public class Game1 : Game
             sprite.Update(gameTime);
         }
         
-        player.Update(gameTime);
+        player.Update(gameTime, meteorites);
 
         base.Update(gameTime);
     }

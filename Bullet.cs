@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Graphics;
 
 namespace SpaceInvaders;
@@ -15,7 +16,7 @@ public class Bullet : Sprite
         this.destinationRectangle = destinationRectangle;
     }
 
-    public virtual void Update(GameTime gameTime, List<Meteorite> meteorites)
+    public virtual void Update(GameTime gameTime, List<Meteorite> meteorites, SoundEffect explosion)
     {
         if (IsAlive)
         {
@@ -25,6 +26,7 @@ public class Bullet : Sprite
             {
                 if (meteorite.destinationRectangle.Intersects(this.destinationRectangle))
                 {
+                    explosion.Play();
                     meteorite.isAlive = false;
                     destroyedMeteorites.Add(meteorite);
                     this.IsAlive = false;
