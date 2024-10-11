@@ -37,8 +37,7 @@ public class Bullet : Sprite
                 meteorites.Remove(item);
             }
             
-            
-            destinationRectangle.Y -= 5;
+            destinationRectangle.Y -= 4;
             if (destinationRectangle.Y <= -50)
             {
                 IsAlive = false;

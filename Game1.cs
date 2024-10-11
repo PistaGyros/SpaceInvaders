@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Graphics;
@@ -15,9 +16,15 @@ public class Game1 : Game
     private Player player;
     private Bullet bullet;
     private Meteorite meteorite;
-    private int numberOfMeteorites;
-
+    private SpriteFont pixelFont;
+    
+    private Vector2 scorePosition;
+    public int numberOfMeteorites;
+    public int actualNumOfMeteorites;
+    public int score;
     private float bulletAliveTime;
+    private bool gameOver;
+    private bool playerWin;
 
     private List<Sprite> sprites;
     private List<Bullet> bullets;
@@ -25,6 +32,7 @@ public class Game1 : Game
     
     private Texture2D bulletTexture;
     private Texture2D meteoriteTexture;
+    private Texture2D bg;
     private Song bgMusic;
     private SoundEffect fireBulletSound;
     private SoundEffect destroyMeteoriteSound;
@@ -33,7 +41,7 @@ public class Game1 : Game
     {
         _graphics = new GraphicsDeviceManager(this);
         _graphics.PreferredBackBufferWidth = 800;
-        _graphics.PreferredBackBufferHeight = 1000;
+        _graphics.PreferredBackBufferHeight = 800;
         _graphics.ApplyChanges();
         Content.RootDirectory = "Content";
         IsMouseVisible = true;
@@ -48,6 +56,8 @@ public class Game1 : Game
         meteorites = new List<Meteorite>();
         numberOfMeteorites = 30;
         bulletAliveTime = 0;
+        scorePosition = new Vector2(10, 10);
+        gameOver = false;
         
         base.Initialize();
     }
@@ -64,15 +74,25 @@ public class Game1 : Game
         MediaPlayer.Play(bgMusic);
         MediaPlayer.IsRepeating = true;
         
-        Texture2D playerTexture = Content.Load<Texture2D>("player_v2");
+        pixelFont = Content.Load<SpriteFont>("pixel_font");
+
+        bg = Content.Load<Texture2D>("space_invaders_background");
         meteoriteTexture = Content.Load<Texture2D>("invader_v1");
         bulletTexture = Content.Load<Texture2D>("bullet");
         
+        Texture2D playerTexture = Content.Load<Texture2D>("player_v2");
         player = new Player(playerTexture,
-            new Rectangle(400 - (playerTexture.Width / 2), 900, playerTexture.Width * 2, playerTexture.Height * 2),
+            new Rectangle(400 - (playerTexture.Width / 2), 700, playerTexture.Width * 2, playerTexture.Height * 2),
             new Rectangle(0, 0, playerTexture.Width, playerTexture.Height));
+        player.OnDeath += PlayerOnOnDeath;
         
         SpawnMeteorites();
+    }
+
+    private void PlayerOnOnDeath(object sender, EventArgs e)
+    {
+        gameOver = true;
+        playerWin = false;
     }
 
     protected override void Update(GameTime gameTime)
@@ -82,42 +102,49 @@ public class Game1 : Game
 
         // TODO: Add your update logic here
 
-        bulletAliveTime -= 0.025f;
-        
-        // fire bullet
-        if (bulletAliveTime <= 0 && Keyboard.GetState().IsKeyDown(Keys.Space))
+        if (!gameOver)
         {
-            fireBulletSound.Play();
-            bulletAliveTime = 2f;
-            int bulletX = player.destinationRectangle.X + player.destinationRectangle.Width / 2;
-            bullets.Add(bullet = new Bullet(bulletTexture,
-                new Rectangle(bulletX, player.destinationRectangle.Y + 5, bulletTexture.Width, bulletTexture.Height),
-                new Rectangle(0, 0, bulletTexture.Width, bulletTexture.Height)));
-        }
+            bulletAliveTime -= 0.025f;
+        
+            // fire bullet
+            if (bulletAliveTime <= 0 && Keyboard.GetState().IsKeyDown(Keys.Space))
+            {
+                FireBullet();
+            }
 
-        foreach (Bullet bullet in bullets)
-        {
-            if (bullet.IsAlive)
+            foreach (Bullet bullet in bullets)
             {
-                bullet.Update(gameTime, meteorites, destroyMeteoriteSound);   
+                if (bullet.IsAlive)
+                {
+                    bullet.Update(gameTime, meteorites, destroyMeteoriteSound);
+                }
             }
-        }
         
-        foreach (var meteorite in meteorites)
-        {
-            if (meteorite.isAlive)
+            foreach (var meteorite in meteorites)
             {
-                meteorite.Update(gameTime, meteorites);
+                if (meteorite.isAlive)
+                {
+                    meteorite.Update(gameTime, meteorites);
+                }
             }
+        
+            // calculate score
+            score = (numberOfMeteorites - meteorites.Count) * 10;
+            if (score >= numberOfMeteorites * 10)
+            {
+                // player win
+                gameOver = true;
+                playerWin = true;
+            }
+        
+        
+            foreach (var sprite in sprites)
+            {
+                sprite.Update(gameTime);
+            }
+        
+            player.Update(gameTime, meteorites, destroyMeteoriteSound);
         }
-        
-        
-        foreach (var sprite in sprites)
-        {
-            sprite.Update(gameTime);
-        }
-        
-        player.Update(gameTime, meteorites);
 
         base.Update(gameTime);
     }
@@ -130,26 +157,42 @@ public class Game1 : Game
         
         _spriteBatch.Begin(samplerState: SamplerState.PointClamp);
 
-        foreach (var bullet in bullets)
-        {
-            if (bullet.IsAlive)
-            {
-                _spriteBatch.Draw(bullet.texture, bullet.destinationRectangle, bullet.sourceRectangle, Color.White);
-            }
-        }
-        
-        foreach (var meteorite in meteorites) 
-        {
-            if (meteorite.isAlive)
-                _spriteBatch.Draw(meteorite.texture, meteorite.destinationRectangle, meteorite.sourceRectangle, Color.White);
-        }   
+        _spriteBatch.Draw(bg, new Rectangle(0, 0, 800, 800), Color.White);
 
-        foreach (var sprite in sprites)
+        if (!gameOver)
         {
-            _spriteBatch.Draw(sprite.texture, sprite.destinationRectangle, sprite.sourceRectangle, Color.White);
+            foreach (var bullet in bullets)
+            {
+                if (bullet.IsAlive)
+                {
+                    _spriteBatch.Draw(bullet.texture, bullet.destinationRectangle, bullet.sourceRectangle, Color.White);
+                }
+            }
+        
+            foreach (var meteorite in meteorites) 
+            {
+                if (meteorite.isAlive)
+                    _spriteBatch.Draw(meteorite.texture, meteorite.destinationRectangle, meteorite.sourceRectangle, Color.White);
+            }   
+
+            foreach (var sprite in sprites)
+            {
+                _spriteBatch.Draw(sprite.texture, sprite.destinationRectangle, sprite.sourceRectangle, Color.White);
+            }
+        
+            _spriteBatch.Draw(player.texture, player.destinationRectangle, player.sourceRectangle, Color.White);
+        }
+        else
+        {
+            string endGameText = playerWin ? "GALAXY IS SAVED" : "GAME OVER";
+            Vector2 endGameTxtPos = new Vector2
+            (_graphics.PreferredBackBufferWidth / 2 - pixelFont.MeasureString(endGameText).X / 2,
+                _graphics.PreferredBackBufferHeight / 2 - 20);
+            _spriteBatch.DrawString(pixelFont, endGameText, endGameTxtPos, Color.Red);
         }
         
-        _spriteBatch.Draw(player.texture, player.destinationRectangle, player.sourceRectangle, Color.White);
+        
+        _spriteBatch.DrawString(pixelFont, "Score: " + score, scorePosition, Color.White);
 
         _spriteBatch.End();
         
@@ -176,5 +219,15 @@ public class Game1 : Game
                 meteoritesInRow = 0;
             }
         }
+    }
+
+    private void FireBullet()
+    {
+        fireBulletSound.Play();
+        bulletAliveTime = 2f;
+        int bulletX = player.destinationRectangle.X + player.destinationRectangle.Width / 2;
+        bullets.Add(bullet = new Bullet(bulletTexture,
+            new Rectangle(bulletX, player.destinationRectangle.Y + 5, bulletTexture.Width, bulletTexture.Height),
+            new Rectangle(0, 0, bulletTexture.Width, bulletTexture.Height)));
     }
 }

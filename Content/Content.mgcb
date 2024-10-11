@@ -43,6 +43,13 @@
 /processorParam:TextureFormat=Color
 /build:invader_v1.gif
 
+#begin pixel_font.spritefont
+/importer:FontDescriptionImporter
+/processor:FontDescriptionProcessor
+/processorParam:PremultiplyAlpha=True
+/processorParam:TextureFormat=Compressed
+/build:pixel_font.spritefont
+
 #begin player_v2.gif
 /importer:TextureImporter
 /processor:TextureProcessor
